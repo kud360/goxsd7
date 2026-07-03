@@ -16,14 +16,14 @@ W3C suite submodule, ratchet mechanics, package contracts (`doc.go`s),
   builtin-datatype tables from `docs/specs/md/xmlschema11-2.md` into
   checked-in Go data (`builtin/gen_*.go`): per-type lexical grammar refs,
   facet applicability, ordered/bounded/cardinality/numeric properties,
-  primitive ancestry.
+  primitive ancestry. (#1, #2, #3)
 - Acceptance: generated tables cover all 49 builtin types; regeneration is
   byte-identical (D1).
 
 ## M2 — XML foundation
 
 - `parser/xmltree`: streaming reader, line/column on every node, bounded
-  memory, namespace resolution, encoding handling.
+  memory, namespace resolution, encoding handling. (#4, #5)
 - `xsderr`: complete (already scaffolded) + rule-ID catalog generation from
   the specs (nice-to-have).
 - Acceptance: fuzz target runs clean; positions verified by unit tests.
@@ -33,11 +33,12 @@ W3C suite submodule, ratchet mechanics, package contracts (`doc.go`s),
 Facet pipeline + `builtin/strict` for a first tranche of types
 (string family, decimal/integer family, boolean), driven by M1 tables.
 Then the rest: float/double, date/time 7-property model, durations, binary,
-anyURI, QName/NOTATION, precisionDecimal.
+anyURI, QName/NOTATION, precisionDecimal. (#6)
 - Wire the **datatype-focused subset** of the W3C suite (msMeta/saxonMeta
   simple-type sets) into the ratchet → first real conformance numbers.
 - Acceptance: ratchet lane live and climbing; user-defined restriction of a
   builtin works through the public API.
+
 
 ## M4 — Schema parsing & component model
 
