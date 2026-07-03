@@ -34,5 +34,8 @@ go.work.sum
 # Agent run logs and scratch space
 .agent/
 
+# macOS
+.DS_Store
+
 # Built tool binaries
 /bin/

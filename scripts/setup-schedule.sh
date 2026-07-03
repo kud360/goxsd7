@@ -269,7 +269,9 @@ cmd_status() {
         fi
     done
     [ "$found" -eq 1 ] || echo "no goxsd7 agents installed"
-    [ -d "$REPO_DIR/.agent/logs" ] && ls -1t "$REPO_DIR/.agent/logs" | head -3 | sed 's/^/recent run: /'
+    if [ -d "$REPO_DIR/.agent/logs" ]; then
+        ls -1t "$REPO_DIR/.agent/logs" | head -3 | sed 's/^/recent run: /'
+    fi
 }
 
 cmd_cron() {
