@@ -88,8 +88,17 @@ cmd_check() {
     if command -v curl >/dev/null 2>&1; then
         if curl -sf --max-time 3 http://localhost:11434/api/tags >/dev/null 2>&1; then
             ok "ollama serving on :11434"
-            if command -v ollama >/dev/null 2>&1 && ! ollama list 2>/dev/null | grep -qi gemma; then
-                warn_ "no gemma model in ollama list — pull the model named in opencode.json"
+            # The exact model opencode will ask for, e.g. "ollama/gemma4:31b-mlx".
+            local model
+            model="$(sed -n 's|.*"model":[[:space:]]*"ollama/\([^"]*\)".*|\1|p' "$REPO_DIR/opencode.json" | head -1)"
+            if [ -z "$model" ]; then
+                warn_ "could not read an ollama/* model from opencode.json — verify its \"model\" entry"
+            elif command -v ollama >/dev/null 2>&1; then
+                if ollama list 2>/dev/null | awk 'NR>1 {print $1}' | grep -qx "$model"; then
+                    ok "model $model pulled"
+                else
+                    warn_ "model $model not in ollama list — run: ollama pull $model"
+                fi
             fi
         else
             warn_ "ollama not responding on localhost:11434 — scheduled runs will no-op until it serves"
