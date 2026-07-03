@@ -6,12 +6,17 @@
 #
 # Usage:
 #   ./scripts/setup-schedule.sh check       # verify prerequisites only
+#   ./scripts/setup-schedule.sh preset <steady|aggressive|relentless>
+#       steady:     develop 2h; plan,develop daily 07:00; ratchet 22:00; retro sun 09:00
+#       aggressive: develop 30m; plan 6h; ratchet daily 22:00; retro daily 09:00
+#       relentless: develop 10m (back-to-back); plan 4h; ratchet 6h; retro daily 09:00
+#       (replaces any previously installed goxsd7 agents)
 #   ./scripts/setup-schedule.sh install <sequence> --every <seconds>
 #   ./scripts/setup-schedule.sh install <sequence> --at <HH:MM> [--weekday 0-6]
 #       (install runs `check` first; --skip-checks to bypass)
 #   ./scripts/setup-schedule.sh uninstall [<sequence>|all]
 #   ./scripts/setup-schedule.sh status
-#   ./scripts/setup-schedule.sh cron        # print crontab lines instead (any OS)
+#   ./scripts/setup-schedule.sh cron [preset] # print crontab lines instead (any OS)
 #
 # <sequence> is a trigger or comma-list: develop | ratchet | plan | retro
 # (see scripts/agent-loop.sh). Examples:
@@ -198,6 +203,38 @@ cmd_install() {
     echo "logs: $REPO_DIR/.agent/  (launchd.out.log, launchd.err.log, logs/)"
 }
 
+cmd_preset() {
+    require_macos
+    local name="${1:-}"
+    [ -n "$name" ] || die "preset needs a name (steady|aggressive|relentless)"
+    cmd_check
+    echo
+    cmd_uninstall all >/dev/null
+    case "$name" in
+        steady)
+            cmd_install develop --every 7200 --skip-checks
+            cmd_install plan,develop --at 07:00 --skip-checks
+            cmd_install ratchet --at 22:00 --skip-checks
+            cmd_install retro --at 09:00 --weekday 0 --skip-checks
+            ;;
+        aggressive)
+            cmd_install develop --every 1800 --skip-checks
+            cmd_install plan --every 21600 --skip-checks
+            cmd_install ratchet --at 22:00 --skip-checks
+            cmd_install retro --at 09:00 --skip-checks
+            ;;
+        relentless)
+            cmd_install develop --every 600 --skip-checks
+            cmd_install plan --every 14400 --skip-checks
+            cmd_install ratchet --every 21600 --skip-checks
+            cmd_install retro --at 09:00 --skip-checks
+            ;;
+        *) die "unknown preset '$name' (steady|aggressive|relentless)" ;;
+    esac
+    echo
+    cmd_status
+}
+
 cmd_uninstall() {
     require_macos
     local target="${1:-all}"
@@ -236,22 +273,44 @@ cmd_status() {
 }
 
 cmd_cron() {
-    cat <<EOF
-# goxsd7 agent loop — add with: crontab -e
-0 */2 * * *  $REPO_DIR/scripts/agent-loop.sh develop
-0 7  * * *   $REPO_DIR/scripts/agent-loop.sh plan,develop
-0 22 * * *   $REPO_DIR/scripts/agent-loop.sh ratchet
-0 9  * * 0   $REPO_DIR/scripts/agent-loop.sh retro
-# cron PATH is minimal; ensure opencode/go/gh/git resolve, e.g.:
+    local preset="${1:-steady}"
+    echo "# goxsd7 agent loop ($preset) — add with: crontab -e"
+    case "$preset" in
+        steady) cat <<EOF
+0 */2 * * *   $REPO_DIR/scripts/agent-loop.sh develop
+0 7  * * *    $REPO_DIR/scripts/agent-loop.sh plan,develop
+0 22 * * *    $REPO_DIR/scripts/agent-loop.sh ratchet
+0 9  * * 0    $REPO_DIR/scripts/agent-loop.sh retro
+EOF
+        ;;
+        aggressive) cat <<EOF
+*/30 * * * *  $REPO_DIR/scripts/agent-loop.sh develop
+15 */6 * * *  $REPO_DIR/scripts/agent-loop.sh plan
+0 22 * * *    $REPO_DIR/scripts/agent-loop.sh ratchet
+0 9  * * *    $REPO_DIR/scripts/agent-loop.sh retro
+EOF
+        ;;
+        relentless) cat <<EOF
+*/10 * * * *  $REPO_DIR/scripts/agent-loop.sh develop
+15 */4 * * *  $REPO_DIR/scripts/agent-loop.sh plan
+30 */6 * * *  $REPO_DIR/scripts/agent-loop.sh ratchet
+0 9  * * *    $REPO_DIR/scripts/agent-loop.sh retro
+EOF
+        ;;
+        *) die "unknown preset '$preset' (steady|aggressive|relentless)" ;;
+    esac
+    cat <<'EOF'
+# cron PATH is minimal; ensure opencode/go/gh/git/golangci-lint resolve, e.g.:
 # PATH=/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin
 EOF
 }
 
 case "${1:-}" in
     check)     cmd_check ;;
+    preset)    shift; cmd_preset "$@" ;;
     install)   shift; cmd_install "$@" ;;
     uninstall) shift; cmd_uninstall "$@" ;;
     status)    cmd_status ;;
-    cron)      cmd_cron ;;
-    *) sed -n '2,22p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+    cron)      shift || true; cmd_cron "$@" ;;
+    *) sed -n '2,27p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac

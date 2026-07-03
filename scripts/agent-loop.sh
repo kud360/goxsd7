@@ -22,16 +22,25 @@ OPENCODE_BIN="${OPENCODE_BIN:-opencode}"
 
 mkdir -p "$LOG_DIR"
 
-# Refuse to overlap a still-running session (stale locks > 6h are cleared).
-if [ -e "$LOCK_FILE" ]; then
+# Never overlap a running session. Wait (bounded) for the lock rather than
+# skipping outright, so infrequent triggers (plan/retro) aren't starved by
+# an aggressive develop cadence. Stale locks > 6h are cleared.
+# GOXSD_LOCK_WAIT: max seconds to wait (default 900; 0 = skip immediately).
+LOCK_WAIT="${GOXSD_LOCK_WAIT:-900}"
+waited=0
+while [ -e "$LOCK_FILE" ]; do
     if [ -n "$(find "$LOCK_FILE" -mmin +360 2>/dev/null)" ]; then
         echo "clearing stale lock ($LOCK_FILE)" >&2
         rm -f "$LOCK_FILE"
-    else
-        echo "another agent session is running ($LOCK_FILE); skipping" >&2
+        break
+    fi
+    if [ "$waited" -ge "$LOCK_WAIT" ]; then
+        echo "lock still held after ${waited}s ($LOCK_FILE); skipping" >&2
         exit 0
     fi
-fi
+    sleep 15
+    waited=$((waited + 15))
+done
 echo "$$" > "$LOCK_FILE"
 trap 'rm -f "$LOCK_FILE"' EXIT
 
