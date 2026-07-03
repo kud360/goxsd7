@@ -30,15 +30,24 @@ implements fixes, oracle never writes code.
    before proceeding.
 4. **Judge** — **arbiter** runs `make build test vet conformance`,
    reviews the diff against STYLE.md, and issues a verdict:
-   - *accept* → arbiter runs `make ratchet` (upward only), mason commits.
+   - *accept* → arbiter runs `make ratchet` (upward only).
    - *reject* → one repair round by mason, then re-judge. Second reject →
-     revert everything, comment findings on the issue, relabel
-     `needs-replan`.
-5. **Record** — **chronicler** appends to `docs/LOG/<year>-<month>.md`,
-   closes or comments the issue (`gh issue close/comment`), pushes.
+     stash the work (`git stash push -u -m "rescue <ts>"`), comment
+     findings on the issue, relabel `needs-replan`. Two rejections is
+     the hard cap — a third attempt has never converged.
+5. **Record & commit** — **chronicler** appends to
+   `docs/LOG/<year>-<month>.md` FIRST; then one commit carries the code
+   and the log entry together; close or comment the issue
+   (`gh issue close/comment`); push. The tree is clean after every push —
+   a session that leaves docs/LOG uncommitted has failed.
 
-Budget: one issue per session. Nothing works? A clean revert + a good
+Budget: one issue per session. Nothing works? A rescue stash + a good
 issue comment is a successful session.
+
+Never destroy a dirty tree: `git clean -fd` / `git restore .` deleted 10
+hours of uncommitted session output once (2026-07-03). Uncommitted
+changes at session start get stashed as `rescue <timestamp>` and logged,
+so a human can triage them later.
 
 ## Other triggers
 

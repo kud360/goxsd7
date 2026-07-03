@@ -76,3 +76,26 @@ lessons; re-learning one is a process failure worth a chronicler entry.
     `complex018`). Record as expected-divergence with justification rather
     than contorting the implementation; never let them cause false
     rejections elsewhere.
+
+## Process (earned in goxsd7 — see docs/LOG/2026-07.md, 2026-07-03)
+
+23. **Never destroy a dirty tree; rescue it.** `git clean -fd` at session
+    start deleted 10 hours of uncommitted overnight work. Uncommitted
+    changes are a crashed session's output: `git stash push -u -m
+    "rescue <ts>"` and log it.
+24. **The session log rides in the session commit.** A log entry written
+    after the commit is left uncommitted, the next session sees a dirty
+    tree it didn't cause, and the entry gets reverted — session history
+    silently evaporates.
+25. **Two rejections is the convergence horizon.** 11 mason attempts and
+    7 arbiter judgments on one 428-line file converged no further than
+    attempt 2 did on the retry the next day. After two rejects: rescue,
+    comment, `needs-replan`, stop.
+26. **Spec data tables are generated, never hand-typed.** An LLM
+    hand-writing 49 datatypes' regexes token-by-token is the slowest,
+    most error-prone path and can never satisfy byte-identical
+    regeneration (D1). Write the generator; commit generator + output.
+27. **Context size is a memory budget, not a convenience.** A 262144
+    num_ctx on a 64 GiB machine hit 108 GiB peak (deep swap), tripled
+    per-token cost, and made built-in MTP speculation a net loss so it
+    disabled itself. Cap num_ctx to what RAM affords.

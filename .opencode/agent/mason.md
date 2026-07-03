@@ -30,6 +30,17 @@ While writing code, the non-negotiables you violate most easily:
   as interfaces, not type switches (T1, T2).
 - Unsupported XPath constructs fail open with `// GAP(xpath): <construct>`.
 - Comments state constraints and spec rule IDs only — never narrate code.
+- When fixing rejected work, EDIT the existing file (targeted
+  search/replace on the flagged lines). Rewriting a whole file to change
+  three regexes wastes ten minutes of generation and risks new errors in
+  untouched lines.
+- Spec-derived data tables (builtin type properties, hfn definitions,
+  regex catalogs, facet tables) are NEVER hand-typed. Write a
+  deterministic generator (fed by `tools/hfnextract` output or the spec
+  markdown) wired to `go generate`, and commit generator + output.
+  Hand-typing 400 lines of regexes is the single most error-prone,
+  slowest thing you can do; a generator is checkable, re-runnable, and
+  satisfies the byte-identical-regeneration acceptance criterion (D1).
 
 Before handing off:
 

@@ -13,6 +13,12 @@ the *process itself* a thing that improves. Two duties:
 
 ## Duty 1 — Session log (end of every session)
 
+You are called BEFORE the session's final commit, so your log entry rides
+in the same commit as the code — never after the commit (an entry written
+after the commit is left uncommitted, and the next session sees a dirty
+tree it didn't cause). Append only; never rewrite, reorder, or delete
+existing entries or headings.
+
 Append to `docs/LOG/<year>-<month>.md` (create from the format already in
 the file; newest entry at the bottom):
 

@@ -1,8 +1,8 @@
 {
   "$schema": "https://opencode.ai/config.json",
   "theme": "system",
-  "model": "ollama/gemma4:31b-mlx",
-  "small_model": "ollama/gemma4:31b-mlx",
+  "model": "ollama/gemma4:31b-mlx-64k",
+  "small_model": "ollama/gemma4:e4b-mlx-32k",
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
@@ -11,8 +11,19 @@
         "baseURL": "http://localhost:11434/v1"
       },
       "models": {
-        "gemma4:31b-mlx": {
-          "name": "Gemma 4 31B (local)"
+        "gemma4:31b-mlx-64k": {
+          "name": "Gemma 4 31B (local, 64k ctx cap)",
+          "limit": {
+            "context": 65536,
+            "output": 8192
+          }
+        },
+        "gemma4:e4b-mlx-32k": {
+          "name": "Gemma 4 E4B (local, small tasks)",
+          "limit": {
+            "context": 32768,
+            "output": 4096
+          }
         }
       }
     }

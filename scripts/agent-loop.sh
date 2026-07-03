@@ -22,20 +22,24 @@ OPENCODE_BIN="${OPENCODE_BIN:-opencode}"
 
 mkdir -p "$LOG_DIR"
 
-# Never overlap a running session. Wait (bounded) for the lock rather than
-# skipping outright, so infrequent triggers (plan/retro) aren't starved by
-# an aggressive develop cadence. Stale locks > 6h are cleared.
-# GOXSD_LOCK_WAIT: max seconds to wait (default 900; 0 = skip immediately).
+# Never overlap a running session. The lock file holds the owner's PID;
+# a lock is stale only if its owner is gone (age tells you nothing — a
+# healthy session can outlive any age threshold, and clearing a live
+# session's lock lets two sessions fight over one working tree).
+# Wait (bounded) for a live lock rather than skipping outright, so
+# infrequent triggers (plan/retro) aren't starved by a dense develop
+# cadence. GOXSD_LOCK_WAIT: max seconds to wait (default 900; 0 = skip).
 LOCK_WAIT="${GOXSD_LOCK_WAIT:-900}"
 waited=0
 while [ -e "$LOCK_FILE" ]; do
-    if [ -n "$(find "$LOCK_FILE" -mmin +360 2>/dev/null)" ]; then
-        echo "clearing stale lock ($LOCK_FILE)" >&2
+    holder="$(cat "$LOCK_FILE" 2>/dev/null || true)"
+    if [ -z "$holder" ] || ! kill -0 "$holder" 2>/dev/null; then
+        echo "clearing stale lock (owner ${holder:-unknown} not running)" >&2
         rm -f "$LOCK_FILE"
         break
     fi
     if [ "$waited" -ge "$LOCK_WAIT" ]; then
-        echo "lock still held after ${waited}s ($LOCK_FILE); skipping" >&2
+        echo "lock held by live pid $holder after ${waited}s; skipping" >&2
         exit 0
     fi
     sleep 15
@@ -59,6 +63,37 @@ warm_model() {
         || echo "warm_model: could not pin $model (ollama down?)" >&2
 }
 
+# Hard wall-clock budget per trigger. A session that hasn't converged by
+# now never converges (observed: 10h of mason/arbiter ping-pong on one
+# file); killing it loses less than letting it run. macOS ships no
+# timeout(1), so babysit the PID ourselves.
+# GOXSD_SESSION_TIMEOUT: max seconds per trigger (default 7200).
+SESSION_TIMEOUT="${GOXSD_SESSION_TIMEOUT:-7200}"
+
+run_with_timeout() {
+    local secs="$1"; shift
+    "$@" &
+    local pid=$!
+    (
+        w=0
+        while [ "$w" -lt "$secs" ] && kill -0 "$pid" 2>/dev/null; do
+            sleep 30
+            w=$((w + 30))
+        done
+        if kill -0 "$pid" 2>/dev/null; then
+            echo "session exceeded ${secs}s; killing pid $pid" >&2
+            kill -TERM "$pid" 2>/dev/null
+            sleep 30
+            kill -KILL "$pid" 2>/dev/null
+        fi
+    ) &
+    local watchdog=$!
+    local status=0
+    wait "$pid" || status=$?
+    kill "$watchdog" 2>/dev/null || true
+    return "$status"
+}
+
 run_trigger() {
     local trigger="$1"
     case "$trigger" in
@@ -74,17 +109,22 @@ run_trigger() {
     # `opencode run --command <name>` on recent versions; fall back to
     # sending the slash command as the message for older ones.
     if "$OPENCODE_BIN" run --help 2>&1 | grep -q -- '--command'; then
-        (cd "$REPO_DIR" && "$OPENCODE_BIN" run --command "$trigger" --agent foreman) >"$log" 2>&1
+        (cd "$REPO_DIR" && run_with_timeout "$SESSION_TIMEOUT" \
+            "$OPENCODE_BIN" run --command "$trigger" --agent foreman) >"$log" 2>&1
         return
     fi
-    (cd "$REPO_DIR" && "$OPENCODE_BIN" run --agent foreman "/$trigger") >"$log" 2>&1
+    (cd "$REPO_DIR" && run_with_timeout "$SESSION_TIMEOUT" \
+        "$OPENCODE_BIN" run --agent foreman "/$trigger") >"$log" 2>&1
 }
 
 warm_model
 
 IFS=',' read -ra TRIGGERS <<< "$SEQUENCE"
 for t in "${TRIGGERS[@]}"; do
-    run_trigger "$(echo "$t" | tr -d '[:space:]')"
+    # A failed or timed-out trigger must not abort the rest of the
+    # sequence (set -e): log it and move on.
+    run_trigger "$(echo "$t" | tr -d '[:space:]')" \
+        || echo "trigger $t exited non-zero" >&2
 done
 
 # Keep the last 200 logs.
