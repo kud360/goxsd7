@@ -117,11 +117,12 @@ func HTTP(client *http.Client) Resolver {
 			return nil, fmt.Errorf("fetching schema %q: %w", loc, err)
 		}
 		if resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusGone {
-			resp.Body.Close()
+			// Close on a discarded error response; nothing to report (STYLE S3).
+			_ = resp.Body.Close()
 			return nil, fmt.Errorf("fetching schema %q: status %s: %w", loc, resp.Status, ErrNotFound)
 		}
 		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
+			_ = resp.Body.Close()
 			return nil, fmt.Errorf("fetching schema %q: unexpected status %s", loc, resp.Status)
 		}
 		return &Document{URI: loc, Body: resp.Body}, nil

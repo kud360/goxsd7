@@ -15,6 +15,8 @@
 // any subset of builtin types (Override).
 package value
 
+import "fmt"
+
 // Value is any value-space datum. Deliberately open (docs/LESSONS.md 2):
 // user backends provide their own concrete types and participate by
 // implementing the capability interfaces below.
@@ -41,8 +43,10 @@ func (o Ordering) String() string {
 		return "equal"
 	case Greater:
 		return "greater"
+	case Incomparable:
+		return "incomparable"
 	}
-	return "incomparable"
+	return fmt.Sprintf("Ordering(%d)", int(o))
 }
 
 // Eq is the equality capability (Datatypes §2.2.1). Required of every

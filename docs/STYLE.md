@@ -116,6 +116,18 @@ Never narrate the next line.
 fallback carries `// GAP(<area>): <construct>` so gaps are greppable and
 ratchetable.
 
+## Enforcement
+
+`make vet` runs the machine-checkable subset via `.golangci.yml`:
+errcheck/errorlint/nilerr (S3, E1), revive early-return/superfluous-else/
+indent-error-flow (S1, S2), exhaustive (T1/T2 closed sums), sloglint
+no-global (L1), forbidigo banning io.ReadAll and fmt.Print* in library
+code (LESSONS 21, L1), plus govet/staticcheck/unused/ineffassign/
+bodyclose and gofmt. Everything needing judgment — T4 duplicates, D2
+map-iteration-into-output, D3 derivable state, E2 rule mapping — is the
+arbiter's and warden's job; keep the linter set lean rather than
+approximating those.
+
 ## Logging
 
 **L1. `log/slog` only,** through a logger accepted at construction

@@ -54,7 +54,7 @@ cmd_check() {
     echo "checking prerequisites for $REPO_DIR"
 
     local tool path
-    for tool in git go gh opencode ollama curl; do
+    for tool in git go gh opencode golangci-lint ollama curl; do
         if ! path="$(command -v "$tool" 2>/dev/null)"; then
             case "$tool" in
                 ollama|curl) warn_ "$tool not on PATH" ;;
@@ -112,7 +112,7 @@ cmd_check() {
 # machine (launchd does not inherit your shell's PATH).
 launchd_path() {
     local path="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin" tool dir
-    for tool in git go gh opencode ollama; do
+    for tool in git go gh opencode golangci-lint ollama; do
         dir="$(command -v "$tool" 2>/dev/null | xargs -I{} dirname {} 2>/dev/null)" || true
         [ -n "$dir" ] || continue
         case ":$path:" in

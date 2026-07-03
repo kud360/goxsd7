@@ -30,7 +30,7 @@ Never edit an expectations file downward to make CI green.
 ```sh
 make build          # go build ./...
 make test           # go test ./...
-make vet            # go vet + gofmt check
+make vet            # go vet + golangci-lint (STYLE gate, incl. gofmt)
 make conformance    # run W3C suite against current code
 make ratchet        # conformance + update expectations upward only
 make specs          # regenerate docs/specs/md from docs/specs/html

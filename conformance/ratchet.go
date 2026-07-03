@@ -85,7 +85,8 @@ func LoadExpectations(path string) (Results, error) {
 	if err != nil {
 		return nil, fmt.Errorf("opening expectations %s: %w", path, err)
 	}
-	defer f.Close()
+	// Read-only close; its error carries no information (STYLE S3).
+	defer func() { _ = f.Close() }()
 	res, err := ParseExpectations(f)
 	if err != nil {
 		return nil, fmt.Errorf("parsing expectations %s: %w", path, err)

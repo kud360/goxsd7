@@ -85,7 +85,8 @@ func convertFile(path, outDir string) error {
 	if err != nil {
 		return fmt.Errorf("open %s: %w", path, err)
 	}
-	defer f.Close()
+	// Read-only close; its error carries no information (STYLE S3).
+	defer func() { _ = f.Close() }()
 
 	doc, err := html.Parse(f)
 	if err != nil {

@@ -10,7 +10,7 @@ import (
 
 func readAll(t *testing.T, doc *Document) string {
 	t.Helper()
-	defer doc.Body.Close()
+	defer func() { _ = doc.Body.Close() }()
 	b, err := io.ReadAll(doc.Body)
 	if err != nil {
 		t.Fatalf("reading document body: %v", err)

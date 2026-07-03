@@ -1,6 +1,6 @@
 GO ?= go
 
-.PHONY: all build test vet check conformance ratchet specs fetch-specs clean
+.PHONY: all build test vet lint check conformance ratchet specs fetch-specs clean
 
 all: check
 
@@ -10,9 +10,13 @@ build:
 test:
 	$(GO) test ./...
 
+# Static checks: go vet + the STYLE.md lint gate (.golangci.yml, which
+# also enforces gofmt via its formatters section).
 vet:
 	$(GO) vet ./...
-	@out=$$(gofmt -l .); if [ -n "$$out" ]; then echo "gofmt needed:"; echo "$$out"; exit 1; fi
+	golangci-lint run
+
+lint: vet
 
 check: build test vet
 
