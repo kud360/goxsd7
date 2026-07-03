@@ -49,6 +49,39 @@ hours of uncommitted session output once (2026-07-03). Uncommitted
 changes at session start get stashed as `rescue <timestamp>` and logged,
 so a human can triage them later.
 
+## Checkpoints & resume (context management)
+
+The foreman's transcript is disposable; auto-compaction may summarize it
+at any moment. Therefore ALL durable session state lives on disk, written
+at step boundaries (the checkpoints): the issue and its comments, the
+foreman's todo list, `.agent/grounding-issue-<N>.md` (the oracle's answer,
+saved verbatim by the foreman), rescue stashes, and commits. Compaction
+must never be able to eat anything that can't be rebuilt from those.
+
+Wrapping up early at a checkpoint (time budget hit, or second reject) is
+a first-class outcome, not a failure. To hand off:
+
+1. `git stash push -u -m "rescue #<N> <YYYYMMDD-HHMMSS>"`
+2. Comment on the issue:
+
+   ```
+   RESUME: <last completed step, e.g. "implementation done, warden passed">
+   Stash: rescue #<N> <timestamp>
+   Next: <the exact next action, e.g. "arbiter verdict round 2 — prior
+   findings were X, Y">
+   Grounding: .agent/grounding-issue-<N>.md (re-ask the oracle if missing)
+   ```
+
+3. Chronicler log entry, commit it, push.
+
+To resume (next session, step 2 of the loop): find the stash named in the
+newest RESUME comment via `git stash list`, then `git stash apply` (NOT
+pop). If it applies cleanly, `git stash drop` that entry and continue
+from "Next:". If it conflicts, undo the failed apply (`git checkout -- .`
+is permitted here ONLY because the content is still safely held in the
+stash), comment that the resume failed, and start the issue fresh — the
+stash stays for human triage.
+
 ## Other triggers
 
 - **`/ratchet`** — arbiter only: run conformance, report movement, ratchet

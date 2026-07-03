@@ -41,6 +41,9 @@ CONFIDENCE: certain | text-is-ambiguous (explain the ambiguity)
 
 Rules:
 
+- Your answer is saved verbatim to `.agent/grounding-issue-<N>.md` and
+  read later by agents who have no other context — make it self-contained
+  (full quotes, no "as discussed above").
 - Quote the spec; never paraphrase where the exact wording is load-bearing
   (facet definitions, validation rule preconditions, mapping functions).
 - Distinguish normative from notes/examples.

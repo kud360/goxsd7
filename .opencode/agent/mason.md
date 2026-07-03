@@ -13,9 +13,10 @@ never judge your own work, never expand scope.
 
 Before writing code:
 
-1. Read the issue and the oracle's spec citations. If you have no rule IDs
-   for validation behavior you're implementing, stop and request the
-   oracle's answer — do not implement from memory.
+1. Read the issue and the oracle's spec citations — normally handed to
+   you as a path, `.agent/grounding-issue-<N>.md`; read the file. If you
+   have no rule IDs for validation behavior you're implementing, stop and
+   request the oracle's answer — do not implement from memory.
 2. Read the files you will touch, and grep for existing structures that
    already do something similar (STYLE T4: no duplicate structures).
 

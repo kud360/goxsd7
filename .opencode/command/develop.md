@@ -12,9 +12,16 @@ Run exactly one iteration of the develop loop from docs/WORKFLOW.md.
    crashed session's output, not garbage.
 2. Pick the top unblocked `ready` issue: `gh issue list --label ready`.
    If none exists, delegate to @cartographer to replenish the ready set,
-   log via @chronicler, and stop.
-3. Get spec grounding from @oracle for every rule ID in the issue's scope.
-4. Have @mason implement the smallest change that closes the issue.
+   log via @chronicler, and stop. If the issue's newest comment is a
+   `RESUME:` block, follow docs/WORKFLOW.md "Checkpoints & resume" —
+   apply the named rescue stash and continue from the recorded step
+   instead of starting over.
+3. Get spec grounding from @oracle for every rule ID in the issue's
+   scope; save the answer verbatim to `.agent/grounding-issue-<N>.md`
+   (skip the oracle entirely if that file already exists from a resumed
+   session).
+4. Have @mason implement the smallest change that closes the issue,
+   pointing it at the grounding file — not pasted spec text.
    If public API changed, have @warden review before judging.
 5. Have @arbiter judge (verdict + ratchet). At most TWO rejections total —
    count them. Second reject → stash the work as a rescue, comment

@@ -41,13 +41,40 @@ Hard rules:
   leaves docs/LOG uncommitted has failed (the next session will see a
   dirty tree it didn't cause).
 
+Context discipline (your transcript is the session's scarcest resource;
+auto-compaction summarizes it at an arbitrary moment, so nothing
+load-bearing may live only in the transcript):
+
+- Never Read source files or specs yourself. Pass paths and issue
+  numbers to subagents — never paste file contents into task prompts.
+  To verify a subagent's claim, use targeted `ls`/`grep -c`/`git diff
+  --stat`, not full-file reads.
+- The moment the oracle answers, write the answer VERBATIM to
+  `.agent/grounding-issue-<N>.md` and from then on hand subagents that
+  path, not the text. Never re-consult the oracle for the same issue —
+  point back at the file.
+- Keep your todo list current at every step boundary; it survives
+  compaction and is how you re-orient.
+- Checkpoints are the loop's step boundaries (grounding done, mason
+  handed off, warden passed, arbiter verdict, committed). After each
+  arbiter verdict, run `date` and compare against session start: past
+  90 minutes, do not start another round — wrap up at this checkpoint:
+  `git stash push -u -m "rescue #<N> <ts>"`, comment the resume state
+  on the issue (format in docs/WORKFLOW.md), log via chronicler, stop.
+  A clean handoff to the next session beats a compacted muddle.
+- If compaction happens anyway, rebuild from disk, not from memory:
+  `gh issue view <N>`, `.agent/grounding-issue-<N>.md`, the todo list,
+  `git status` and `git diff --stat`.
+
 Session procedure (develop):
 
 1. `git status` — if the tree is dirty, ask the chronicler to record it,
    then rescue it: `git stash push -u -m "rescue <timestamp>"`. Never
    delete or revert it.
 2. `git pull --rebase` and `git submodule update --init`.
-3. Pick the issue per docs/WORKFLOW.md step 1.
+3. Pick the issue per docs/WORKFLOW.md step 1. If its newest `RESUME:`
+   comment names a rescue stash, resume per docs/WORKFLOW.md instead of
+   starting over.
 4. Run steps 2–5 of the loop with the subagents (chronicler BEFORE the
    commit; log and code travel in the same commit).
 5. Stop. Do not start a second issue.
