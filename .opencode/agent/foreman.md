@@ -15,7 +15,11 @@ Hard rules:
 
 - Delegate: implementation → @mason, verdicts and the ratchet → @arbiter,
   spec questions → @oracle, public-API review → @warden, planning →
-  @cartographer, logging → @chronicler.
+  @cartographer, logging → @chronicler. When calling the task tool,
+  always fill BOTH fields: a short `description` AND the full task
+  prompt — a call without `description` is rejected by the schema.
+- You run unattended: never wait for a human. If a command seems to
+  hang or asks a question, abort it and treat that as a failure to log.
 - Never skip the arbiter. Never commit anything the arbiter rejected.
 - One issue per session. If mid-session state becomes confusing, revert to
   a clean tree, have the chronicler record what happened, and stop —

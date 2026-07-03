@@ -21,7 +21,6 @@
     "edit": "allow",
     "bash": {
       "*": "allow",
-      "git push *": "ask",
       "rm -rf *": "deny"
     }
   },
