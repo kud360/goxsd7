@@ -69,6 +69,11 @@ runs it automatically; `--skip-checks` to bypass):
   line to their crontab instead.
 - `ollama serve` responding with the model from opencode.json pulled
   (warning only — it just needs to be up when the schedule fires).
+  The loop pins the model in memory before each session
+  (`keep_alive: -1` via the API), so no cold start per run; for the
+  server-wide equivalent set `OLLAMA_KEEP_ALIVE=-1` in the ollama
+  server's environment (on macOS, `launchctl setenv` is session-only —
+  use a RunAtLoad LaunchAgent to survive reboots).
 - `gh auth status` logged in (issue read/write, push).
 - Git push credentials that work non-interactively (SSH key/credential
   helper; checked via `git push --dry-run`).

@@ -44,6 +44,21 @@ done
 echo "$$" > "$LOCK_FILE"
 trap 'rm -f "$LOCK_FILE"' EXIT
 
+# Load the model and pin it in memory (keep_alive -1) before the session,
+# so scheduled runs never pay a cold start and the pin holds regardless of
+# how the ollama server's OLLAMA_KEEP_ALIVE env is set. Non-fatal: if
+# ollama isn't up, the session itself will surface that.
+warm_model() {
+    local model
+    model="$(sed -n 's|.*"model":[[:space:]]*"ollama/\([^"]*\)".*|\1|p' "$REPO_DIR/opencode.json" | head -1)"
+    if [ -z "$model" ]; then
+        return 0
+    fi
+    curl -sf --max-time 300 http://localhost:11434/api/generate \
+        -d "{\"model\":\"$model\",\"keep_alive\":-1}" >/dev/null \
+        || echo "warm_model: could not pin $model (ollama down?)" >&2
+}
+
 run_trigger() {
     local trigger="$1"
     case "$trigger" in
@@ -64,6 +79,8 @@ run_trigger() {
     fi
     (cd "$REPO_DIR" && "$OPENCODE_BIN" run --agent foreman "/$trigger") >"$log" 2>&1
 }
+
+warm_model
 
 IFS=',' read -ra TRIGGERS <<< "$SEQUENCE"
 for t in "${TRIGGERS[@]}"; do
