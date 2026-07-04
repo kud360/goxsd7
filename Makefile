@@ -31,6 +31,7 @@ ratchet:
 # Regenerate docs/specs/md from the committed HTML.
 specs:
 	$(GO) run ./tools/spec2md -in docs/specs/html -out docs/specs/md
+	$(GO) run ./tools/rulecat
 
 fetch-specs:
 	./scripts/fetch-specs.sh

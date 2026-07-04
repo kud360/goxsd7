@@ -38,3 +38,23 @@ func TestZeroLoc(t *testing.T) {
 		t.Errorf("zero Loc String() = %q", got)
 	}
 }
+
+func TestIsValidRule(t *testing.T) {
+	tests := []struct {
+		rule Rule
+		want bool
+	}{
+		{"cvc-complex-type", true},
+		{"cos-st-restricts", true},
+		{"src-resolve", true},
+		{"not-a-rule", false},
+		{"", false},
+	}
+	for _, tt := range tests {
+		t.Run(string(tt.rule), func(t *testing.T) {
+			if got := IsValidRule(tt.rule); got != tt.want {
+				t.Errorf("IsValidRule(%q) = %v; want %v", tt.rule, got, tt.want)
+			}
+		})
+	}
+}
